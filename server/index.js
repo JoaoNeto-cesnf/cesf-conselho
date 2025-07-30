@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'https://censf-conselho.vercel.app', // Substitua pelo URL do seu frontend no Vercel
+    origin: 'https://cesf-conselho.vercel.app/', // Substitua pelo URL do seu frontend no Vercel
     methods: ['GET', 'POST'],
   },
 });
