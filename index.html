@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro/Login - Conselho Estudantil CESF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cesf-blue': '#3b82f6',
+            'cesf-gray': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes slideInDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slideInDown { animation: slideInDown 0.4s ease-out; }
+    .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+    .animate-slideInUp { animation: slideInUp 0.4s ease-out; }
+    .hover-scale { transition: transform 0.2s ease-in-out; }
+    .hover-scale:hover { transform: scale(1.03); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-cesf-gray to-gray-900 text-white font-sans min-h-screen flex flex-col">
+  <nav class="bg-cesf-gray p-4 fixed top-0 w-full z-10 animate-slideInDown">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-cesf-blue">CESF - Conselho</h1>
+      <div class="flex space-x-4 text-lg">
+        <a href="index.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Cadastro/Login">Cadastro/Login</a>
+        <a href="ranking.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Ranking">Ranking</a>
+        <a href="admin.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Administração">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <section id="loginSection" class="flex-1 flex items-center justify-center p-4 min-h-screen animate-fadeIn">
+    <div class="max-w-lg w-full bg-cesf-gray rounded-lg shadow-lg p-6 animate-slideInUp">
+      <h2 class="text-3xl font-bold text-center mb-4 text-cesf-blue">Login de Aluno</h2>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="loginNome" class="block text-lg mb-1">Nome</label>
+          <input type="text" id="loginNome" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Nome do aluno">
+        </div>
+        <div>
+          <label for="loginSenha" class="block text-lg mb-1">Senha</label>
+          <input type="password" id="loginSenha" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Senha do aluno">
+        </div>
+        <button type="submit" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-3 rounded-md text-lg hover-scale" aria-label="Entrar">Entrar</button>
+        <p id="loginError" class="text-red-500 text-lg text-center hidden">Nome ou senha incorretos!</p>
+        <p class="text-center text-lg mt-4">Não tem conta? <a href="#" id="showCadastro" class="text-cesf-blue hover:underline">Cadastre-se</a></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="cadastroSection" class="flex-1 flex items-center justify-center p-4 min-h-screen animate-fadeIn hidden">
+    <div class="max-w-lg w-full bg-cesf-gray rounded-lg shadow-lg p-6 animate-slideInUp">
+      <h2 class="text-3xl font-bold text-center mb-4 text-cesf-blue">Cadastro de Aluno</h2>
+      <form id="cadastroForm" class="space-y-4">
+        <div>
+          <label for="nome" class="block text-lg mb-1">Nome</label>
+          <input type="text" id="nome" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Nome do aluno">
+        </div>
+        <div>
+          <label for="senha" class="block text-lg mb-1">Senha</label>
+          <input type="password" id="senha" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Senha do aluno">
+        </div>
+        <div>
+          <label for="ano" class="block text-lg mb-1">Ano</label>
+          <select id="ano" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Ano do aluno">
+            <option value="6º ano">6º ano</option>
+            <option value="7º ano">7º ano</option>
+            <option value="8º ano">8º ano</option>
+            <option value="9º ano">9º ano</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-3 rounded-md text-lg hover-scale" aria-label="Cadastrar aluno">Cadastrar</button>
+        <p class="text-center text-lg mt-4">Já tem conta? <a href="#" id="showLogin" class="text-cesf-blue hover:underline">Faça login</a></p>
+      </form>
+    </div>
+  </section>
+
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+    <div class="bg-cesf-gray rounded-lg p-6 max-w-sm w-full animate-slideInUp">
+      <h3 id="modalTitle" class="text-xl font-bold text-cesf-blue mb-4"></h3>
+      <p id="modalMessage" class="text-lg mb-4"></p>
+      <button id="modalClose" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-2 rounded-md hover-scale">Fechar</button>
+    </div>
+  </div>
+
+  <footer class="bg-cesf-gray p-4 text-center text-lg">
+    © 2025 Conselho Estudantil - CESF. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    const socket = io('https://cesf-backend.onrender.com'); // Substitua pelo URL do seu backend no Render
+
+    function showModal(title, message) {
+      const modal = document.getElementById('modal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalMessage = document.getElementById('modalMessage');
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.add('hidden');
+    }
+
+    function checkLoggedInUser() {
+      const loggedInUser = localStorage.getItem('loggedInUser');
+      if (loggedInUser) {
+        window.location.href = 'perfil.html';
+      }
+    }
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+
+    document.getElementById('showCadastro').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('cadastroSection').classList.remove('hidden');
+    });
+
+    document.getElementById('showLogin').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('cadastroSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('loginNome').value.trim();
+      const senha = document.getElementById('loginSenha').value;
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, senha }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          document.getElementById('loginError').classList.remove('hidden');
+        } else {
+          localStorage.setItem('loggedInUser', JSON.stringify(data));
+          socket.emit('userLogin', data);
+          window.location.href = 'perfil.html';
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao realizar login. Verifique a conexão.');
+      }
+    });
+
+    document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const senha = document.getElementById('senha').value;
+      const ano = document.getElementById('ano').value;
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/cadastro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, senha, ano }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          showModal('Erro', data.error);
+        } else {
+          localStorage.setItem('loggedInUser', JSON.stringify(data));
+          socket.emit('userLogin', data);
+          showModal('Sucesso', `Cadastro realizado: ${nome} (${ano})! Redirecionando...`);
+          setTimeout(() => {
+            window.location.href = 'perfil.html';
+          }, 2000);
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao cadastrar aluno. Verifique a conexão.');
+      }
+    });
+
+    checkLoggedInUser();
+  </script>
+</body>
+</html>

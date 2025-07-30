@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ranking - Conselho Estudantil CESF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cesf-blue': '#3b82f6',
+            'cesf-gray': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes slideInDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slideInDown { animation: slideInDown 0.4s ease-out; }
+    .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+    .animate-slideInUp { animation: slideInUp 0.4s ease-out; }
+    .hover-scale { transition: transform 0.2s ease-in-out; }
+    .hover-scale:hover { transform: scale(1.03); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-cesf-gray to-gray-900 text-white font-sans min-h-screen flex flex-col">
+  <nav class="bg-cesf-gray p-4 fixed top-0 w-full z-10 animate-slideInDown">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-cesf-blue">CESF - Conselho</h1>
+      <div class="flex space-x-4 text-lg">
+        <a href="index.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Cadastro/Login">Cadastro/Login</a>
+        <a href="ranking.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Ranking">Ranking</a>
+        <a href="admin.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Administração">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="flex-1 flex items-center justify-center p-4 min-h-screen animate-fadeIn">
+    <div class="max-w-4xl w-full bg-cesf-gray rounded-lg shadow-lg p-6 animate-slideInUp">
+      <h2 class="text-3xl font-bold text-center mb-4 text-cesf-blue">Ranking de Anos</h2>
+      <table class="w-full text-lg">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="p-4 text-left">Posição</th>
+            <th class="p-4 text-left">Ano</th>
+            <th class="p-4 text-left">Pontos</th>
+          </tr>
+        </thead>
+        <tbody id="rankingTable" class="divide-y divide-gray-700"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="bg-cesf-gray p-4 text-center text-lg">
+    © 2025 Conselho Estudantil - CESF. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    async function updateRanking() {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/anos');
+        const anos = await response.json();
+        if (anos.length === 0) {
+          alert('Nenhum ano encontrado no ranking.');
+          return;
+        }
+        anos.sort((a, b) => b.pontos - a.pontos);
+        const tbody = document.getElementById('rankingTable');
+        tbody.innerHTML = '';
+        anos.forEach((ano, index) => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-700 transition duration-300';
+          tr.innerHTML = `
+            <td class="p-4">${index + 1}</td>
+            <td class="p-4">${ano.nome}</td>
+            <td class="p-4">${ano.pontos}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert('Erro ao carregar o ranking. Verifique a conexão.');
+      }
+    }
+
+    updateRanking();
+  </script>
+</body>
+</html>

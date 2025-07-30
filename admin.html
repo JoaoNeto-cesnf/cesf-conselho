@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administração - Conselho Estudantil CESF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'cesf-blue': '#3b82f6',
+            'cesf-gray': '#1f2937'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes slideInDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slideInDown { animation: slideInDown 0.4s ease-out; }
+    .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+    .animate-slideInUp { animation: slideInUp 0.4s ease-out; }
+    .hover-scale { transition: transform 0.2s ease-in-out; }
+    .hover-scale:hover { transform: scale(1.03); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-cesf-gray to-gray-900 text-white font-sans min-h-screen flex flex-col">
+  <nav class="bg-cesf-gray p-4 fixed top-0 w-full z-10 animate-slideInDown">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-cesf-blue">CESF - Conselho</h1>
+      <div class="flex space-x-4 text-lg">
+        <a href="index.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Cadastro/Login">Cadastro/Login</a>
+        <a href="ranking.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Ranking">Ranking</a>
+        <a href="admin.html" class="hover:text-cesf-blue transition duration-300" aria-label="Página de Administração">Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <section id="loginSection" class="flex-1 flex items-center justify-center p-4 min-h-screen animate-fadeIn">
+    <div class="max-w-lg w-full bg-cesf-gray rounded-lg shadow-lg p-6 animate-slideInUp">
+      <h2 class="text-3xl font-bold text-center mb-4 text-cesf-blue">Login de Administrador</h2>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="loginNome" class="block text-lg mb-1">Nome de Usuário</label>
+          <input type="text" id="loginNome" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Nome de usuário">
+        </div>
+        <div>
+          <label for="loginSenha" class="block text-lg mb-1">Senha</label>
+          <input type="password" id="loginSenha" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Senha">
+        </div>
+        <button type="submit" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-3 rounded-md text-lg hover-scale" aria-label="Entrar como administrador">Entrar</button>
+        <p id="loginError" class="text-red-500 text-lg text-center hidden">Nome ou senha incorretos, ou não é administrador!</p>
+      </form>
+    </div>
+  </section>
+
+  <section id="adminPanel" class="flex-1 p-4 min-h-screen animate-fadeIn hidden">
+    <div class="max-w-4xl mx-auto bg-cesf-gray rounded-lg shadow-lg p-6 mb-6">
+      <h2 class="text-3xl font-bold text-center mb-4 text-cesf-blue">Painel de Controle</h2>
+      <p class="text-lg mb-4"><span class="font-medium">Logado como:</span> <span id="currentAdmin"></span></p>
+      <button id="logoutBtn" class="w-full bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-md text-lg hover-scale mb-4" aria-label="Sair do painel">Sair</button>
+      <h3 class="text-xl font-bold mb-3 text-white">Usuários Online</h3>
+      <table class="w-full text-lg mb-6">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="p-4 text-left">Nome</th>
+            <th class="p-4 text-left">Ano</th>
+            <th class="p-4 text-left">Admin</th>
+          </tr>
+        </thead>
+        <tbody id="onlineUsersTable" class="divide-y divide-gray-700"></tbody>
+      </table>
+      <h3 class="text-xl font-bold mb-3 text-white">Alterar Pontos</h3>
+      <form id="pontosForm" class="space-y-4">
+        <div>
+          <label for="anoPontos" class="block text-lg mb-1">Ano</label>
+          <select id="anoPontos" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Selecionar ano">
+            <option value="6º ano">6º ano</option>
+            <option value="7º ano">7º ano</option>
+            <option value="8º ano">8º ano</option>
+            <option value="9º ano">9º ano</option>
+          </select>
+        </div>
+        <div>
+          <label for="pontos" class="block text-lg mb-1">Pontos</label>
+          <input type="number" id="pontos" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Quantidade de pontos">
+        </div>
+        <div>
+          <label for="motivo" class="block text-lg mb-1">Motivo</label>
+          <textarea id="motivo" class="w-full p-3 text-lg bg-gray-700 rounded-md h-24 focus:outline-none focus:ring-2 focus:ring-cesf-blue" required aria-label="Motivo da alteração"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-3 rounded-md text-lg hover-scale" aria-label="Alterar pontos">Alterar Pontos</button>
+      </form>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-cesf-gray rounded-lg shadow-lg p-6 mb-6">
+      <h3 class="text-xl font-bold mb-3 text-white">Alunos Cadastrados</h3>
+      <table class="w-full text-lg">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="p-4 text-left">Nome</th>
+            <th class="p-4 text-left">Ano</th>
+            <th class="p-4 text-left">Admin</th>
+            <th class="p-4 text-left">Status</th>
+            <th class="p-4 text-left">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="alunosTable" class="divide-y divide-gray-700"></tbody>
+      </table>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-cesf-gray rounded-lg shadow-lg p-6 mb-6">
+      <h3 class="text-xl font-bold mb-3 text-white">Gerenciar Administradores</h3>
+      <form id="adminForm" class="space-y-4">
+        <div>
+          <label for="novoAdmin" class="block text-lg mb-1">Selecionar Aluno</label>
+          <select id="novoAdmin" class="w-full p-3 text-lg bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-cesf-blue" aria-label="Selecionar aluno para tornar administrador"></select>
+        </div>
+        <button type="submit" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-3 rounded-md text-lg hover-scale" aria-label="Tornar administrador">Tornar Admin</button>
+      </form>
+      <h4 class="text-lg font-bold mt-4 mb-2 text-white">Administradores Atuais</h4>
+      <table class="w-full text-lg">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="p-4 text-left">Nome</th>
+            <th class="p-4 text-left">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="adminsTable" class="divide-y divide-gray-700"></tbody>
+      </table>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-cesf-gray rounded-lg shadow-lg p-6">
+      <h3 class="text-xl font-bold mb-3 text-white">Histórico de Alterações</h3>
+      <table class="w-full text-lg">
+        <thead>
+          <tr class="bg-gray-700">
+            <th class="p-4 text-left">Ano</th>
+            <th class="p-4 text-left">Pontos</th>
+            <th class="p-4 text-left">Motivo</th>
+            <th class="p-4 text-left">Admin</th>
+            <th class="p-4 text-left">Data</th>
+          </tr>
+        </thead>
+        <tbody id="historicoTable" class="divide-y divide-gray-700"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+    <div class="bg-cesf-gray rounded-lg p-6 max-w-sm w-full animate-slideInUp">
+      <h3 id="modalTitle" class="text-xl font-bold text-cesf-blue mb-4"></h3>
+      <p id="modalMessage" class="text-lg mb-4"></p>
+      <button id="modalClose" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-2 rounded-md hover-scale">Fechar</button>
+    </div>
+  </div>
+
+  <div id="alunoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+    <div class="bg-cesf-gray rounded-lg p-6 max-w-sm w-full animate-slideInUp">
+      <h3 id="alunoModalTitle" class="text-xl font-bold text-cesf-blue mb-4">Detalhes do Aluno</h3>
+      <p class="text-lg mb-2"><span class="font-medium">Nome:</span> <span id="alunoNome"></span></p>
+      <p class="text-lg mb-2"><span class="font-medium">Ano:</span> <span id="alunoAno"></span></p>
+      <p class="text-lg mb-2"><span class="font-medium">Admin:</span> <span id="alunoAdmin"></span></p>
+      <p class="text-lg mb-4"><span class="font-medium">Status:</span> <span id="alunoStatus"></span></p>
+      <button id="alunoModalClose" class="w-full bg-cesf-blue hover:bg-blue-700 text-white p-2 rounded-md hover-scale">Fechar</button>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-20">
+    <div class="bg-cesf-gray rounded-lg p-6 max-w-sm w-full animate-slideInUp">
+      <h3 class="text-xl font-bold text-cesf-blue mb-4">Confirmar Exclusão</h3>
+      <p class="text-lg mb-4">Tem certeza que deseja excluir <span id="deleteAlunoNome" class="font-medium"></span>?</p>
+      <div class="flex space-x-2">
+        <button id="deleteConfirm" class="flex-1 bg-red-600 hover:bg-red-700 text-white p-2 rounded-md hover-scale">Excluir</button>
+        <button id="deleteCancel" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md hover-scale">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-cesf-gray p-4 text-center text-lg">
+    © 2025 Conselho Estudantil - CESF. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    const socket = io('https://cesf-backend.onrender.com'); // Substitua pelo URL do seu backend no Render
+    const SUPERADMIN_NOME = 'João Neto';
+    let currentAdmin = null;
+    let alunoToDelete = null;
+
+    function showModal(title, message) {
+      const modal = document.getElementById('modal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalMessage = document.getElementById('modalMessage');
+      modalTitle.textContent = title;
+      modalMessage.textContent = message;
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.add('hidden');
+    }
+
+    function showAlunoModal(aluno) {
+      const modal = document.getElementById('alunoModal');
+      document.getElementById('alunoNome').textContent = aluno.nome;
+      document.getElementById('alunoAno').textContent = aluno.ano;
+      document.getElementById('alunoAdmin').textContent = aluno.isAdmin ? 'Sim' : 'Não';
+      document.getElementById('alunoStatus').textContent = aluno.isBlocked ? 'Bloqueado' : 'Ativo';
+      modal.classList.remove('hidden');
+    }
+
+    function closeAlunoModal() {
+      const modal = document.getElementById('alunoModal');
+      modal.classList.add('hidden');
+    }
+
+    function showDeleteModal(nome) {
+      alunoToDelete = nome;
+      const modal = document.getElementById('deleteModal');
+      document.getElementById('deleteAlunoNome').textContent = nome;
+      modal.classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      const modal = document.getElementById('deleteModal');
+      modal.classList.add('hidden');
+      alunoToDelete = null;
+    }
+
+    async function updateAlunos() {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/alunos');
+        const alunos = await response.json();
+        const tbody = document.getElementById('alunosTable');
+        tbody.innerHTML = '';
+        alunos.forEach(aluno => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-700 transition duration-300';
+          tr.innerHTML = `
+            <td class="p-4 ${currentAdmin === SUPERADMIN_NOME ? 'cursor-pointer' : ''}">${aluno.nome}</td>
+            <td class="p-4">${aluno.ano}</td>
+            <td class="p-4">${aluno.isAdmin ? 'Sim' : 'Não'}</td>
+            <td class="p-4">${aluno.isBlocked ? 'Bloqueado' : 'Ativo'}</td>
+            <td class="p-4">
+              ${currentAdmin === SUPERADMIN_NOME && aluno.nome !== SUPERADMIN_NOME ? `
+                <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md hover-scale mr-2" 
+                        onclick="showDeleteModal('${aluno.nome}')" 
+                        aria-label="Excluir ${aluno.nome}">Excluir</button>
+                <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md hover-scale" 
+                        onclick="toggleBlock('${aluno.nome}', ${aluno.isBlocked})" 
+                        aria-label="${aluno.isBlocked ? 'Desbloquear' : 'Bloquear'} ${aluno.nome}">
+                  ${aluno.isBlocked ? 'Desbloquear' : 'Bloquear'}
+                </button>
+              ` : ''}
+            </td>
+          `;
+          if (currentAdmin === SUPERADMIN_NOME) {
+            tr.addEventListener('click', (e) => {
+              if (!e.target.closest('button')) showAlunoModal(aluno);
+            });
+          }
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        showModal('Erro', 'Falha ao carregar alunos. Verifique a conexão.');
+      }
+    }
+
+    async function updateAdmins() {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/alunos');
+        const alunos = await response.json();
+        const admins = alunos.filter(aluno => aluno.isAdmin && !aluno.isSuperAdmin);
+        const select = document.getElementById('novoAdmin');
+        select.innerHTML = '<option value="">Selecione um aluno</option>';
+        alunos.filter(aluno => !aluno.isAdmin && !aluno.isBlocked).forEach(aluno => {
+          const option = document.createElement('option');
+          option.value = aluno.nome;
+          option.textContent = aluno.nome;
+          select.appendChild(option);
+        });
+        const tbody = document.getElementById('adminsTable');
+        tbody.innerHTML = '';
+        admins.forEach(admin => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-700 transition duration-300';
+          tr.innerHTML = `
+            <td class="p-4">${admin.nome}</td>
+            <td class="p-4">
+              <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md hover-scale" 
+                      onclick="removeAdmin('${admin.nome}')" 
+                      aria-label="Remover administrador ${admin.nome}">
+                Remover
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        showModal('Erro', 'Falha ao carregar administradores. Verifique a conexão.');
+      }
+    }
+
+    async function updateHistorico() {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/historico');
+        const historico = await response.json();
+        const tbody = document.getElementById('historicoTable');
+        tbody.innerHTML = '';
+        historico.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-700 transition duration-300';
+          tr.innerHTML = `
+            <td class="p-4">${item.ano}</td>
+            <td class="p-4">${item.pontos}</td>
+            <td class="p-4">${item.motivo}</td>
+            <td class="p-4">${item.admin}</td>
+            <td class="p-4">${new Date(item.data).toLocaleString('pt-BR')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        showModal('Erro', 'Falha ao carregar histórico. Verifique a conexão.');
+      }
+    }
+
+    async function updateOnlineUsers() {
+      socket.on('onlineUsers', (users) => {
+        const tbody = document.getElementById('onlineUsersTable');
+        tbody.innerHTML = '';
+        users.forEach(user => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-700 transition duration-300';
+          tr.innerHTML = `
+            <td class="p-4">${user.nome}</td>
+            <td class="p-4">${user.ano}</td>
+            <td class="p-4">${user.isAdmin ? 'Sim' : 'Não'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    async function toggleBlock(nome, isBlocked) {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/aluno', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, action: 'toggleBlock' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showModal('Sucesso', `Aluno ${nome} ${isBlocked ? 'desbloqueado' : 'bloqueado'} com sucesso!`);
+          updateAlunos();
+        } else {
+          showModal('Erro', 'Falha ao alterar status do aluno.');
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao alterar status do aluno. Verifique a conexão.');
+      }
+    }
+
+    async function removeAdmin(nome) {
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, action: 'remove' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showModal('Sucesso', `Administrador ${nome} removido com sucesso!`);
+          updateAdmins();
+          updateAlunos();
+        } else {
+          showModal('Erro', 'Falha ao remover administrador.');
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao remover administrador. Verifique a conexão.');
+      }
+    }
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('alunoModalClose').addEventListener('click', closeAlunoModal);
+    document.getElementById('deleteCancel').addEventListener('click', closeDeleteModal);
+
+    document.getElementById('deleteConfirm').addEventListener('click', async function() {
+      if (!alunoToDelete) return;
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/aluno', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: alunoToDelete, action: 'delete' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showModal('Sucesso', `Aluno ${alunoToDelete} excluído com sucesso!`);
+          closeDeleteModal();
+          updateAlunos();
+        } else {
+          showModal('Erro', 'Falha ao excluir aluno.');
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao excluir aluno. Verifique a conexão.');
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('loginNome').value.trim();
+      const senha = document.getElementById('loginSenha').value;
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, senha }),
+        });
+        const data = await response.json();
+        if (data.error || !data.isAdmin) {
+          document.getElementById('loginError').classList.remove('hidden');
+        } else {
+          currentAdmin = data.nome;
+          document.getElementById('loginSection').classList.add('hidden');
+          document.getElementById('adminPanel').classList.remove('hidden');
+          document.getElementById('currentAdmin').textContent = data.nome;
+          updateAlunos();
+          updateAdmins();
+          updateHistorico();
+          updateOnlineUsers();
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao realizar login. Verifique a conexão.');
+      }
+    });
+
+    document.getElementById('pontosForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const ano = document.getElementById('anoPontos').value;
+      const pontos = parseInt(document.getElementById('pontos').value);
+      const motivo = document.getElementById('motivo').value.trim();
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/pontos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ano, pontos, motivo, admin: currentAdmin }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showModal('Sucesso', 'Pontos alterados com sucesso!');
+          updateHistorico();
+          document.getElementById('pontosForm').reset();
+        } else {
+          showModal('Erro', 'Falha ao alterar pontos.');
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao alterar pontos. Verifique a conexão.');
+      }
+    });
+
+    document.getElementById('adminForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('novoAdmin').value;
+      if (!nome) {
+        showModal('Erro', 'Selecione um aluno!');
+        return;
+      }
+      try {
+        const response = await fetch('https://cesf-backend.onrender.com/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, action: 'add' }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showModal('Sucesso', `Administrador ${nome} adicionado com sucesso!`);
+          updateAdmins();
+          updateAlunos();
+        } else {
+          showModal('Erro', 'Falha ao adicionar administrador.');
+        }
+      } catch (err) {
+        showModal('Erro', 'Falha ao adicionar administrador. Verifique a conexão.');
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      currentAdmin = null;
+      document.getElementById('adminPanel').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
+    });
+  </script>
+</body>
+</html>
